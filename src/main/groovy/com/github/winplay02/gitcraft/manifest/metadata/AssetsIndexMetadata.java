@@ -13,7 +13,7 @@ public record AssetsIndexMetadata(Map<String, Asset> objects, boolean map_to_res
 		public Asset(String hash, int size, String url) {
 			this.hash = hash;
 			this.size = size;
-			this.url = url != null ? url : AssetsIndex.makeMinecraftAssetUrl(hash);
+			this.url = (url != null) ? url : AssetsIndex.makeMinecraftAssetUrl(hash);
 		}
 	}
 }
