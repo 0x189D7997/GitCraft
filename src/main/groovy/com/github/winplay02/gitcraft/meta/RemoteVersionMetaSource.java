@@ -1,8 +1,8 @@
 package com.github.winplay02.gitcraft.meta;
 
 import java.io.IOException;
+import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.URL;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -30,7 +30,7 @@ public class RemoteVersionMetaSource<M extends VersionMeta<M>> implements Versio
 
 	public M getLatest(String clas) throws IOException, URISyntaxException, InterruptedException {
 		if (latestVersions == null) {
-			List<M> allVersions = SerializationHelper.deserialize(FileSystemNetworkManager.fetchAllFromURLSync(new URL(url)), metaType);
+			List<M> allVersions = SerializationHelper.deserialize(FileSystemNetworkManager.fetchAllFromURLSync(new URI(url).toURL()), metaType);
 			Map<String, List<M>> groupedVersions = allVersions.stream().collect(Collectors.groupingBy(classifier));
 
 			latestVersions = groupedVersions.values().stream().map(versions -> versions.stream().max(Comparator.naturalOrder())).filter(Optional::isPresent).map(Optional::get).collect(Collectors.toMap(classifier, Function.identity()));
