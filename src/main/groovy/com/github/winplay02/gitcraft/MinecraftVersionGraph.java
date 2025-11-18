@@ -260,6 +260,53 @@ public class MinecraftVersionGraph extends AbstractVersionGraph<OrderedVersion> 
 		return mcVersion;
 	}
 
+	public OrderedVersion walkForwardToTip(OrderedVersion mcVersion) {
+		return this.walkForwardToTip(mcVersion, true);
+	}
+
+	public OrderedVersion walkForwardToMergePoint(OrderedVersion mcVersion) {
+		return this.walkForwardToTip(mcVersion, false);
+	}
+
+	private OrderedVersion walkForwardToTip(OrderedVersion mcVersion, boolean followMerged) {
+
+		// the following logic assumes there are no secondary branches
+		// this is currently true for all supported manifests
+
+		Set<OrderedVersion> next_versions = this.getFollowingVertices(mcVersion);
+
+		// no branches start from this version
+		if (next_versions.size() == 1) {
+			OrderedVersion next = next_versions.iterator().next();
+			// detect if this is a first version on a non-mainline branch
+			if (!followMerged // continue through merge point
+				&& this.shouldExcludeFromMainBranch(mcVersion) // continue to root for versions on main branch
+				&& !this.shouldExcludeFromMainBranch(next)) { // continue if next version is not merged into mainline
+				return mcVersion;
+			} else {
+				return this.walkForwardToTip(next, followMerged);
+			}
+		}
+
+		// at least two branches start from this version
+		// we need to carefully select the path
+		// mainline versions should not steer away from main branch
+		if (next_versions.size() > 1) {
+			// select main branch always and only for mainline versions
+			boolean non_mainline = this.shouldExcludeFromMainBranch(mcVersion);
+			for (OrderedVersion branch : next_versions) {
+				if (followMerged && !this.shouldExcludeFromMainBranch(branch)) { // follow through with merge even if branch continues
+					return walkForwardToTip(branch, followMerged);
+				} else if (!followMerged && (non_mainline == this.shouldExcludeFromMainBranch(branch))) {
+					return walkForwardToTip(branch, followMerged);
+				}
+			}
+		}
+
+		// there are no following vertices, this is a tip version
+		return mcVersion;
+	}
+
 	public OrderedVersion getMinecraftVersionByName(String versionName) {
 		if (versionName == null) {
 			return null;
