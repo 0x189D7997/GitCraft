@@ -53,7 +53,7 @@ public class MinecraftVersionGraph extends AbstractVersionGraph<OrderedVersion> 
 			MiscHelper.panic("Minecraft version graph is inconsistently structured! Tree roots: %s. Walk roots: %s.", this.roots, roots);
 		}
 
-		this.markRoots(pathsToTip, branchPoints);
+		this.markRoots(pathsToTip, this.roots);
 	}
 
 	private Set<OrderedVersion> findPathLengths(Set<OrderedVersion> startingLayer, Map<OrderedVersion, Integer> pathLengths, Set<OrderedVersion> branchPoints, Function<OrderedVersion, Set<OrderedVersion>> nextVersionsGetter) {
