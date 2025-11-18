@@ -99,7 +99,7 @@ public class MinecraftVersionGraph extends AbstractVersionGraph<OrderedVersion> 
 	private void markRoots(Map<OrderedVersion, Integer> allPathsToTip, Set<OrderedVersion> roots) {
 		// used to sort roots
 		for (OrderedVersion root : roots) {
-			this.rootDepths.put(root, allPathsToTip.get(root));
+			this.pathsToTip.put(root, allPathsToTip.get(root));
 		}
 	}
 
