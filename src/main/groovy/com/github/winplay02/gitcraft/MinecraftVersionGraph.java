@@ -42,22 +42,18 @@ public class MinecraftVersionGraph extends AbstractVersionGraph<OrderedVersion> 
 	private void findBranchStructure() {
 		this.roots = this.findRootVertices();
 
-		this.pathsToRoot = new HashMap<>();
 		this.pathsToTip = new HashMap<>();
 
-		Map<OrderedVersion, Integer> pathsToRoot = new HashMap<>();
 		Map<OrderedVersion, Integer> pathsToTip = new HashMap<>();
-		Set<OrderedVersion> branchPoints = new HashSet<>();
 
-		Set<OrderedVersion> tips = this.findPathLengths(this.roots, pathsToRoot, branchPoints, this::getFollowingVertices);
-		Set<OrderedVersion> roots = this.findPathLengths(tips, pathsToTip, branchPoints, this::getPreviousVertices);
+		Set<OrderedVersion> tips = this.findPathLengths(this.roots, new HashMap<>(), new HashSet<>(), this::getFollowingVertices);
+		Set<OrderedVersion> roots = this.findPathLengths(tips, pathsToTip, new HashSet<>(), this::getPreviousVertices);
 
 		if (!roots.equals(this.roots)) {
 			MiscHelper.panic("Minecraft version graph is inconsistently structured! Tree roots: %s. Walk roots: %s.", this.roots, roots);
 		}
 
-		this.markBranchPoints(pathsToRoot, pathsToTip, branchPoints);
-		this.markBranches(pathsToRoot, pathsToTip);
+		this.markRoots(pathsToTip, branchPoints);
 	}
 
 	private Set<OrderedVersion> findPathLengths(Set<OrderedVersion> startingLayer, Map<OrderedVersion, Integer> pathLengths, Set<OrderedVersion> branchPoints, Function<OrderedVersion, Set<OrderedVersion>> nextVersionsGetter) {
@@ -100,92 +96,10 @@ public class MinecraftVersionGraph extends AbstractVersionGraph<OrderedVersion> 
 		return ends;
 	}
 
-	private void markBranchPoints(Map<OrderedVersion, Integer> allPathsToRoot, Map<OrderedVersion, Integer> allPathsToTip, Set<OrderedVersion> branchPoints) {
-		for (OrderedVersion version : branchPoints) {
-			Set<OrderedVersion> prevVersions = this.getPreviousVertices(version);
-			Set<OrderedVersion> nextVersions = this.getFollowingVertices(version);
-
-			if (prevVersions.size() > 1) {
-				for (OrderedVersion prevVersion : prevVersions) {
-					this.pathsToRoot.put(prevVersion, allPathsToRoot.get(prevVersion));
-				}
-			}
-			if (nextVersions.size() > 1) {
-				for (OrderedVersion nextVersion : nextVersions) {
-					// path length to root is used as tie breaker for these branch points
-					this.pathsToRoot.put(nextVersion, allPathsToRoot.get(nextVersion));
-					this.pathsToTip.put(nextVersion, allPathsToTip.get(nextVersion));
-				}
-			}
-		}
-
+	private void markRoots(Map<OrderedVersion, Integer> allPathsToTip, Set<OrderedVersion> roots) {
 		// used to sort roots
-		for (OrderedVersion root : this.roots) {
-			this.pathsToTip.put(root, allPathsToTip.get(root));
-		}
-	}
-
-	private void markBranches(Map<OrderedVersion, Integer> allPathsToRoot, Map<OrderedVersion, Integer> allPathsToTip) {
-		Set<OrderedVersion> currentBranches = new TreeSet<>((v1, v2) -> {
-			int c = this.pathsToTip.getOrDefault(v1, 0) - this.pathsToTip.getOrDefault(v2, 0);
-			if (c == 0) {
-				c = this.pathsToRoot.getOrDefault(v1, 0) - this.pathsToRoot.getOrDefault(v2, 0);
-			}
-			return c;
-		});
-		Set<OrderedVersion> nextBranches = new LinkedHashSet<>();
-		Set<OrderedVersion> visited = new HashSet<>();
-
-		currentBranches.addAll(this.roots);
-
-		for (boolean mainBranch = true; !currentBranches.isEmpty(); mainBranch = false) {
-			nextBranches.clear();
-
-			for (OrderedVersion version : currentBranches) {
-				while (version != null && visited.add(version)) {
-					Set<OrderedVersion> nextVersions = this.getFollowingVertices(version);
-
-					version = null;
-					int longestPathToRoot = -1;
-					int longestPathToTip = -1;
-
-					for (OrderedVersion nextVersion : nextVersions) {
-						if (this.shouldExcludeFromMainBranch(nextVersion) && (nextVersions.size() > 1 || !this.pathsToTip.containsKey(nextVersion))) {
-							this.pathsToTip.put(nextVersion, allPathsToTip.get(nextVersion));
-
-							if (mainBranch) {
-								continue;
-							} else {
-								this.pathsToTip.remove(nextVersion);
-							}
-						}
-
-						// if path length is not present, then this version
-						// was already marked as lying on a branch
-						int pathToRoot = this.pathsToRoot.getOrDefault(nextVersion, Integer.MAX_VALUE);
-						int pathToTip = this.pathsToTip.getOrDefault(nextVersion, Integer.MAX_VALUE);
-
-						if (pathToTip == longestPathToTip ? pathToRoot > longestPathToRoot : pathToTip > longestPathToTip) {
-							version = nextVersion;
-							longestPathToRoot = pathToRoot;
-							longestPathToTip = pathToTip;
-						}
-					}
-
-					if (version != null && (nextVersions.size() > 1 || !this.shouldExcludeFromMainBranch(version))) {
-						this.pathsToTip.remove(version);
-					}
-
-					for (OrderedVersion nextVersion : nextVersions) {
-						if (nextVersion != version) {
-							nextBranches.add(nextVersion);
-						}
-					}
-				}
-			}
-
-			currentBranches.clear();
-			currentBranches.addAll(nextBranches);
+		for (OrderedVersion root : roots) {
+			this.rootDepths.put(root, allPathsToTip.get(root));
 		}
 	}
 
@@ -194,7 +108,6 @@ public class MinecraftVersionGraph extends AbstractVersionGraph<OrderedVersion> 
 	}
 
 	public HashMap<OrderedVersion, Integer> pathsToTip = new HashMap<>();
-	public HashMap<OrderedVersion, Integer> pathsToRoot = new HashMap<>();
 
 	public static MinecraftVersionGraph createFromMetadata(Executor executor, MetadataProvider<OrderedVersion> provider) throws IOException {
 		MinecraftVersionGraph graph = new MinecraftVersionGraph();
@@ -312,45 +225,39 @@ public class MinecraftVersionGraph extends AbstractVersionGraph<OrderedVersion> 
 	}
 
 	private OrderedVersion walkBackToBranchPoint(OrderedVersion mcVersion, boolean root) {
-		// path lengths are only stored for branch points and roots
-		if (!root && this.pathsToTip.containsKey(mcVersion)) {
-			return mcVersion;
-		}
 
-		Set<OrderedVersion> branches = this.getPreviousVertices(mcVersion);
+		// the following logic assumes there are no secondary branches
+		// this is currently true for all supported manifests
 
-		if (branches.size() == 1) {
-			return this.walkBackToBranchPoint(branches.iterator().next());
-		}
+		Set<OrderedVersion> previous_versions = this.getPreviousVertices(mcVersion);
 
-		// version is not a branch point or root, and number of prev versions
-		// is not 1, so then there must be multiple
-		// pick the version that lies on a branch if there is one, and walk
-		// further along that path, otherwise pick the version with the longest
-		// path to a tip
-
-		OrderedVersion longestBranch = null;
-		int longestPathToRoot = -1;
-		int longestPathToTip = -1;
-
-		for (OrderedVersion branch : branches) {
-			// if path length to tip is not present, then this version
-			// was already marked as lying on a branch
-			if (!this.pathsToTip.containsKey(branch)) {
-				return this.walkBackToBranchPoint(branch);
+		// no branches were merged into this version
+		if (previous_versions.size() == 1) {
+			OrderedVersion previous = previous_versions.iterator().next();
+			// detect if this is a first version on a non-mainline branch
+			if (!root // continue to root even when branch changes
+				&& this.shouldExcludeFromMainBranch(mcVersion) // continue to root for versions on main branch
+				&& !this.shouldExcludeFromMainBranch(previous)) { // continue if previous version is still on the branch
+				return mcVersion;
 			}
+			return this.walkBackToBranchPoint(previous, root);
+		}
 
-			int pathToRoot = this.pathsToRoot.get(branch);
-			int pathToTip = this.pathsToTip.get(branch);
-
-			if (pathToTip == longestPathToTip ? pathToRoot > longestPathToRoot : pathToTip > longestPathToTip) {
-				longestBranch = branch;
-				longestPathToRoot = pathToRoot;
-				longestPathToTip = pathToTip;
+		// at least two branches are merged into this version
+		// we need to carefully select the path
+		// merges from mainline should not prevent tracking of the branch
+		if (previous_versions.size() > 1) {
+			// select main branch always and only for mainline versions
+			boolean non_mainline = this.shouldExcludeFromMainBranch(mcVersion);
+			for (OrderedVersion previous : previous_versions) {
+				if (non_mainline == this.shouldExcludeFromMainBranch(previous)) {
+					return walkBackToBranchPoint(previous, root);
+				}
 			}
 		}
 
-		return longestBranch == null ? mcVersion : longestBranch;
+		// there are no previous vertices, this is a root version
+		return mcVersion;
 	}
 
 	public OrderedVersion getMinecraftVersionByName(String versionName) {
