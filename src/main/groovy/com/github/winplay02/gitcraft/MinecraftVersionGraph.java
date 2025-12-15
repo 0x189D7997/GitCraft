@@ -219,7 +219,10 @@ public class MinecraftVersionGraph extends AbstractVersionGraph<OrderedVersion> 
 		if (this.roots.isEmpty()) {
 			MiscHelper.panic("MinecraftVersionGraph does not contain a root version node");
 		}
-		return this.roots.stream().max((v1, v2) -> this.pathsToTip.get(v1) - this.pathsToTip.get(v2)).get();
+		return this.roots.stream().filter(this::isMainline)
+				.findAny()
+				.orElse(this.roots.stream().max((v1, v2) ->
+						this.pathsToTip.get(v1) - this.pathsToTip.get(v2)).orElseThrow());
 	}
 
 	public boolean isOnMainBranch(OrderedVersion mcVersion) {
