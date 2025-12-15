@@ -183,7 +183,7 @@ public class MinecraftVersionGraph extends AbstractVersionGraph<OrderedVersion> 
 	}
 
 	public MinecraftVersionGraph filterMainlineVersions() {
-		return new MinecraftVersionGraph(this, this::isOnMainBranch);
+		return new MinecraftVersionGraph(this, this::isMainline);
 	}
 
 	public MinecraftVersionGraph filterMinVersion(OrderedVersion version) {
