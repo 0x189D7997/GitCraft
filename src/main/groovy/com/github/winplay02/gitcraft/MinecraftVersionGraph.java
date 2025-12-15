@@ -245,7 +245,7 @@ public class MinecraftVersionGraph extends AbstractVersionGraph<OrderedVersion> 
 		return this.walkBackToBranchPoint(mcVersion, false, true);
 	}
 
-	private OrderedVersion walkBackToBranchPoint(OrderedVersion mcVersion, boolean root, boolean stopOnMerge) {
+	private OrderedVersion walkBackToBranchPoint(OrderedVersion mcVersion, boolean root, boolean split) {
 
 		// the following logic assumes there are no secondary branches
 		// this is currently true for all supported manifests
@@ -261,19 +261,19 @@ public class MinecraftVersionGraph extends AbstractVersionGraph<OrderedVersion> 
 				&& this.isMainline(previous)) { // continue if previous version is still on the branch
 				return mcVersion;
 			}
-			return this.walkBackToBranchPoint(previous, root, stopOnMerge);
+			return this.walkBackToBranchPoint(previous, root, split);
 		}
 
 		// at least two branches are merged into this version
 		// we need to carefully select the path and make sure the choice of branch is unambiguous
-		// stopOnMerge = false: merges from mainline should not prevent tracking of the branch
-		// stopOnMerge = true: return if not looking for root otherwise stick to main branch as soon as we can
+		// split = false: merges from mainline should not prevent tracking of the branch
+		// split = true: return if not looking for root otherwise stick to main branch as soon as we can
 		if (previous_versions.size() > 1) {
 			boolean mainline = this.isMainline(mcVersion);
 
 			// stop if anything is merged into this branch
 			// no need to check previous vertices
-			if (stopOnMerge && !root) {
+			if (split && !root) {
 				return mcVersion;
 			}
 
@@ -281,16 +281,16 @@ public class MinecraftVersionGraph extends AbstractVersionGraph<OrderedVersion> 
 			int exclusiveCount = 0;
 			for (OrderedVersion previous : previous_versions) {
 				boolean p_mainline = this.isMainline(previous);
-				if (p_mainline && (mainline || stopOnMerge)) { // stay on main branch or switch to it when looking for root with stopOnMerge
-					return walkBackToBranchPoint(previous, root, stopOnMerge);
+				if (p_mainline && (mainline || split)) { // stay on main branch or switch to it when looking for root with split = true
+					return walkBackToBranchPoint(previous, root, split);
 				}
 				if (!mainline && !p_mainline) { // follow the branch and make sure there are no other non-mainline branches
 					exclusiveWalkBack = previous;
 					exclusiveCount++;
 				}
 			}
-			if (exclusiveCount == 1 && !stopOnMerge) { // double check as this should not be reachable with stopOnMerge
-				return walkBackToBranchPoint(exclusiveWalkBack, root, stopOnMerge);
+			if (exclusiveCount == 1 && !split) { // double check as this should not be reachable with split = true
+				return walkBackToBranchPoint(exclusiveWalkBack, root, split);
 			}
 
 			MiscHelper.panic("walkBackToBranchPoint could not determine which branch to follow for %s", mcVersion.friendlyVersion());
@@ -316,7 +316,7 @@ public class MinecraftVersionGraph extends AbstractVersionGraph<OrderedVersion> 
 		return this.walkForwardToMergePoint(mcVersion, false, true);
 	}
 
-	private OrderedVersion walkForwardToMergePoint(OrderedVersion mcVersion, boolean tip, boolean stopOnMerge) {
+	private OrderedVersion walkForwardToMergePoint(OrderedVersion mcVersion, boolean tip, boolean split) {
 
 		// the following logic assumes there are no secondary branches
 		// this is currently true for all supported manifests
@@ -332,20 +332,20 @@ public class MinecraftVersionGraph extends AbstractVersionGraph<OrderedVersion> 
 				&& this.isMainline(next)) { // continue if next version is not merged into mainline
 				return mcVersion;
 			} else {
-				return this.walkForwardToMergePoint(next, tip, stopOnMerge);
+				return this.walkForwardToMergePoint(next, tip, split);
 			}
 		}
 
 		// at least two branches start from this version
 		// we need to carefully select the path and make sure the choice of branch is unambiguous
-		// stopOnMerge = false: merges to mainline should not prevent tracking of the branch
-		// stopOnMerge = true: return if not looking for tip otherwise stick to main branch as soon as we can
+		// split = false: merges to mainline should not prevent tracking of the branch
+		// split = true: return if not looking for tip otherwise stick to main branch as soon as we can
 		if (next_versions.size() > 1) {
 			boolean mainline = this.isMainline(mcVersion);
 
 			// stop if this branch is merged or splits
 			// no need to check following vertices
-			if (stopOnMerge && !tip) {
+			if (split && !tip) {
 				return mcVersion;
 			}
 
@@ -353,16 +353,16 @@ public class MinecraftVersionGraph extends AbstractVersionGraph<OrderedVersion> 
 			int exclusiveCount = 0;
 			for (OrderedVersion next : next_versions) {
 				boolean n_mainline = this.isMainline(next);
-				if (n_mainline && (mainline || stopOnMerge)) { // stay on main branch or switch to it when looking for tip with stopOnMerge
-					return walkBackToBranchPoint(next, tip, stopOnMerge);
+				if (n_mainline && (mainline || split)) { // stay on main branch or switch to it when looking for tip with split = true
+					return walkBackToBranchPoint(next, tip, split);
 				}
 				if (!mainline && !n_mainline) { // follow the branch and make sure there are no other non-mainline branches
 					exclusiveWalkBack = next;
 					exclusiveCount++;
 				}
 			}
-			if (exclusiveCount == 1 && !stopOnMerge) { // double check as this should not be reachable with stopOnMerge
-				return walkBackToBranchPoint(exclusiveWalkBack, tip, stopOnMerge);
+			if (exclusiveCount == 1 && !split) { // double check as this should not be reachable with split = true
+				return walkBackToBranchPoint(exclusiveWalkBack, tip, split);
 			}
 
 			MiscHelper.panic("walkBackToBranchPoint could not determine which branch to follow for %s", mcVersion.friendlyVersion());
