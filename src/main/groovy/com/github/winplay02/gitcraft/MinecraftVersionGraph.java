@@ -241,7 +241,7 @@ public class MinecraftVersionGraph extends AbstractVersionGraph<OrderedVersion> 
 		return this.walkBackToBranchPoint(mcVersion, false, false);
 	}
 
-	public OrderedVersion walkBackToFirstBranchPoint(OrderedVersion mcVersion) {
+	public OrderedVersion walkBackToSplitPoint(OrderedVersion mcVersion) {
 		return this.walkBackToBranchPoint(mcVersion, false, true);
 	}
 
@@ -271,9 +271,9 @@ public class MinecraftVersionGraph extends AbstractVersionGraph<OrderedVersion> 
 		if (previous_versions.size() > 1) {
 			boolean mainline = this.isMainline(mcVersion);
 
-			// stop if there is merge into this branch
+			// stop if anything is merged into this branch
 			// no need to check previous vertices
-			if (stopOnMerge && !root && !mainline) {
+			if (stopOnMerge && !root) {
 				return mcVersion;
 			}
 
@@ -312,7 +312,7 @@ public class MinecraftVersionGraph extends AbstractVersionGraph<OrderedVersion> 
 		return this.walkForwardToMergePoint(mcVersion, false, false);
 	}
 
-	public OrderedVersion walkForwardToFirstMergePoint(OrderedVersion mcVersion) {
+	public OrderedVersion walkForwardToSplitPoint(OrderedVersion mcVersion) {
 		return this.walkForwardToMergePoint(mcVersion, false, true);
 	}
 
@@ -345,7 +345,7 @@ public class MinecraftVersionGraph extends AbstractVersionGraph<OrderedVersion> 
 
 			// stop if this branch is merged or splits
 			// no need to check following vertices
-			if (stopOnMerge && !tip && !mainline) {
+			if (stopOnMerge && !tip) {
 				return mcVersion;
 			}
 
