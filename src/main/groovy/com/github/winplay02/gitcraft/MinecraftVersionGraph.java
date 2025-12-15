@@ -30,6 +30,7 @@ import java.util.stream.Collectors;
 
 public class MinecraftVersionGraph extends AbstractVersionGraph<OrderedVersion> {
 
+	private final Predicate<OrderedVersion> excludeFromMainBranchPredicate = GitCraft.getApplicationConfiguration().manifestSource().getMetadataProvider()::shouldExcludeFromMainBranch;
 
 	private MinecraftVersionGraph() {
 		super();
@@ -105,7 +106,11 @@ public class MinecraftVersionGraph extends AbstractVersionGraph<OrderedVersion> 
 	}
 
 	private boolean shouldExcludeFromMainBranch(OrderedVersion mcVersion) {
-		return GitCraft.getApplicationConfiguration().manifestSource().getMetadataProvider().shouldExcludeFromMainBranch(mcVersion);
+		return this.excludeFromMainBranchPredicate.test(mcVersion);
+	}
+
+	private boolean isMainline(OrderedVersion mcVersion) {
+		return !this.shouldExcludeFromMainBranch(mcVersion);
 	}
 
 	public HashMap<OrderedVersion, Integer> pathsToTip = new HashMap<>();
