@@ -121,6 +121,7 @@ public abstract class GitCraftApplication {
 		}
 		graph = graph.filterMapping(getApplicationConfiguration().usedMapping(), getApplicationConfiguration().fallbackMappings());
 		graph = graph.filterUnpick(getApplicationConfiguration().usedUnpickFlavour(), getApplicationConfiguration().fallbackUnpickFlavours());
+		graph = graph.filterConnectedOrphans();
 		return graph;
 	}
 

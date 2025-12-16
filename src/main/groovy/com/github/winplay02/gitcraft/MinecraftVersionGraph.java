@@ -199,6 +199,10 @@ public class MinecraftVersionGraph extends AbstractVersionGraph<OrderedVersion> 
 		return new MinecraftVersionGraph(this, versionList::contains, versionList.stream().map(OrderedVersion::launcherFriendlyVersionName).collect(Collectors.joining("-")));
 	}
 
+	public MinecraftVersionGraph filterConnectedOrphans() {
+		return new MinecraftVersionGraph(this, Predicate.not(this::isOnConnectedOrphanBranch));
+	}
+
 	public MinecraftVersionGraph filterExcludeVersion(OrderedVersion... version) {
 		TreeSet<OrderedVersion> versionList = new TreeSet<>(Arrays.asList(version));
 		if (versionList.isEmpty()) {
