@@ -229,6 +229,16 @@ public class MinecraftVersionGraph extends AbstractVersionGraph<OrderedVersion> 
 		return this.roots.contains(this.walkBackToBranchPoint(mcVersion));
 	}
 
+	public boolean isOnOrphanBranch(OrderedVersion mcVersion) {
+		return this.walkBackToMainlineRoot(mcVersion) != this.getMainRootVersion();
+	}
+
+	public boolean isOnConnectedOrphanBranch(OrderedVersion mcVersion) {
+		return this.isOnOrphanBranch(mcVersion)
+				&& (this.edgesFw.get(this.walkForwardToMergePoint(mcVersion)).stream().anyMatch(this::isMainline) // merges into main branch
+				|| this.edgesBack.get(this.walkForwardToMergeFromMainBranch(mcVersion)).stream().anyMatch(this::isMainline)); // merges from main branch
+	}
+
 	public OrderedVersion walkBackToRoot(OrderedVersion mcVersion) {
 		return this.walkBackToBranchPoint(mcVersion, true, false, false);
 	}
