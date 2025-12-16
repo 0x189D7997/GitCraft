@@ -230,25 +230,32 @@ public class MinecraftVersionGraph extends AbstractVersionGraph<OrderedVersion> 
 	}
 
 	public OrderedVersion walkBackToRoot(OrderedVersion mcVersion) {
-		return this.walkBackToBranchPoint(mcVersion, true, false);
+		return this.walkBackToBranchPoint(mcVersion, true, false, false);
 	}
 
 	public OrderedVersion walkBackToMainlineRoot(OrderedVersion mcVersion) {
-		return this.walkBackToBranchPoint(mcVersion, true, true);
+		return this.walkBackToBranchPoint(mcVersion, true, true, false);
 	}
 
 	public OrderedVersion walkBackToBranchPoint(OrderedVersion mcVersion) {
-		return this.walkBackToBranchPoint(mcVersion, false, false);
+		return this.walkBackToBranchPoint(mcVersion, false, false, false);
 	}
 
-	public OrderedVersion walkBackToSplitPoint(OrderedVersion mcVersion) {
-		return this.walkBackToBranchPoint(mcVersion, false, true);
-	}
-
-	private OrderedVersion walkBackToBranchPoint(OrderedVersion mcVersion, boolean root, boolean split) {
+	private OrderedVersion walkBackToBranchPoint(OrderedVersion mcVersion, boolean root, boolean split, boolean outgoing) {
 
 		// the following logic assumes there are no secondary branches
 		// this is currently true for all supported manifests
+
+		// stop if this branch is merged into mainline at this point
+		// currently unused
+		if (outgoing) {
+			Set<OrderedVersion> next_versions = this.getFollowingVertices(mcVersion);
+			if (next_versions.size() > 1
+					&& !this.isMainline(mcVersion)
+					&& next_versions.stream().anyMatch(this::isMainline)) {
+				return mcVersion;
+			}
+		}
 
 		Set<OrderedVersion> previous_versions = this.getPreviousVertices(mcVersion);
 
@@ -301,25 +308,31 @@ public class MinecraftVersionGraph extends AbstractVersionGraph<OrderedVersion> 
 	}
 
 	public OrderedVersion walkForwardToTip(OrderedVersion mcVersion) {
-		return this.walkForwardToMergePoint(mcVersion, true, false);
-	}
-
-	public OrderedVersion walkForwardToMainlineTip(OrderedVersion mcVersion) {
-		return this.walkForwardToMergePoint(mcVersion, true, true);
+		return this.walkForwardToMergePoint(mcVersion, true, false, false);
 	}
 
 	public OrderedVersion walkForwardToMergePoint(OrderedVersion mcVersion) {
-		return this.walkForwardToMergePoint(mcVersion, false, false);
+		return this.walkForwardToMergePoint(mcVersion, false, false, false);
 	}
 
-	public OrderedVersion walkForwardToSplitPoint(OrderedVersion mcVersion) {
-		return this.walkForwardToMergePoint(mcVersion, false, true);
+	public OrderedVersion walkForwardToMergeFromMainBranch(OrderedVersion mcVersion) {
+		return this.walkForwardToMergePoint(mcVersion, false, false, true);
 	}
 
-	private OrderedVersion walkForwardToMergePoint(OrderedVersion mcVersion, boolean tip, boolean split) {
+	private OrderedVersion walkForwardToMergePoint(OrderedVersion mcVersion, boolean tip, boolean split, boolean incoming) {
 
 		// the following logic assumes there are no secondary branches
 		// this is currently true for all supported manifests
+
+		// search for merges into this branch
+		if (incoming) {
+			Set<OrderedVersion> previous_versions = this.getPreviousVertices(mcVersion);
+			if (previous_versions.size() > 1
+					&& !this.isMainline(mcVersion)
+					&& previous_versions.stream().anyMatch(this::isMainline)) {
+				return mcVersion;
+			}
+		}
 
 		Set<OrderedVersion> next_versions = this.getFollowingVertices(mcVersion);
 
