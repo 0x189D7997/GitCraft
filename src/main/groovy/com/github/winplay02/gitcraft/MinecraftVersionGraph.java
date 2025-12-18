@@ -282,7 +282,7 @@ public class MinecraftVersionGraph extends AbstractVersionGraph<OrderedVersion> 
 				&& this.isMainline(previous)) { // continue if previous version is still on the branch
 				return mcVersion;
 			}
-			return this.walkBackToBranchPoint(previous, root, split);
+			return this.walkBackToBranchPoint(previous, root, split, outgoing);
 		}
 
 		// at least two branches are merged into this version
@@ -303,7 +303,7 @@ public class MinecraftVersionGraph extends AbstractVersionGraph<OrderedVersion> 
 			for (OrderedVersion previous : previous_versions) {
 				boolean p_mainline = this.isMainline(previous);
 				if (p_mainline && (mainline || split)) { // stay on main branch or switch to it when looking for root with split = true
-					return walkBackToBranchPoint(previous, root, split);
+					return walkBackToBranchPoint(previous, root, split, outgoing);
 				}
 				if (!mainline && !p_mainline) { // follow the branch and make sure there are no other non-mainline branches
 					exclusiveWalkBack = previous;
@@ -311,7 +311,7 @@ public class MinecraftVersionGraph extends AbstractVersionGraph<OrderedVersion> 
 				}
 			}
 			if (exclusiveCount == 1 && !split) { // double check as this should not be reachable with split = true
-				return walkBackToBranchPoint(exclusiveWalkBack, root, split);
+				return walkBackToBranchPoint(exclusiveWalkBack, root, split, outgoing);
 			}
 
 			MiscHelper.panic("walkBackToBranchPoint could not determine which branch to follow for %s", mcVersion.friendlyVersion());
@@ -359,7 +359,7 @@ public class MinecraftVersionGraph extends AbstractVersionGraph<OrderedVersion> 
 				&& this.isMainline(next)) { // continue if next version is not merged into mainline
 				return mcVersion;
 			} else {
-				return this.walkForwardToMergePoint(next, tip, split);
+				return this.walkForwardToMergePoint(next, tip, split, incoming);
 			}
 		}
 
@@ -381,7 +381,7 @@ public class MinecraftVersionGraph extends AbstractVersionGraph<OrderedVersion> 
 			for (OrderedVersion next : next_versions) {
 				boolean n_mainline = this.isMainline(next);
 				if (n_mainline && (mainline || split)) { // stay on main branch or switch to it when looking for tip with split = true
-					return walkBackToBranchPoint(next, tip, split);
+					return walkBackToBranchPoint(next, tip, split, incoming);
 				}
 				if (!mainline && !n_mainline) { // follow the branch and make sure there are no other non-mainline branches
 					exclusiveWalkBack = next;
@@ -389,7 +389,7 @@ public class MinecraftVersionGraph extends AbstractVersionGraph<OrderedVersion> 
 				}
 			}
 			if (exclusiveCount == 1 && !split) { // double check as this should not be reachable with split = true
-				return walkBackToBranchPoint(exclusiveWalkBack, tip, split);
+				return walkBackToBranchPoint(exclusiveWalkBack, tip, split, incoming);
 			}
 
 			MiscHelper.panic("walkBackToBranchPoint could not determine which branch to follow for %s", mcVersion.friendlyVersion());
