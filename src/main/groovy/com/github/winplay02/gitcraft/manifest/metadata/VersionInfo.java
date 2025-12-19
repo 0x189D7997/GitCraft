@@ -6,22 +6,25 @@ import com.google.gson.annotations.JsonAdapter;
 import java.time.ZonedDateTime;
 import java.util.List;
 
-public record VersionInfo(ArtifactMetadata assetIndex, String assets, Downloads downloads, String id,
-						  JavaVersion javaVersion, List<LibraryMetadata> libraries, String mainClass,
-						  ZonedDateTime releaseTime, ZonedDateTime time, String type, VersionArguments arguments,
-						  String minecraftArguments) {
+public record VersionInfo(ArtifactMetadata assetIndex, String assets, int complianceLevel, Downloads downloads, String id,
+						  JavaVersion javaVersion, List<LibraryMetadata> libraries, Logging logging, String mainClass, int minimumLauncherVersion,
+						  ZonedDateTime releaseTime, ZonedDateTime time, String type, VersionArguments arguments, String minecraftArguments,
+						  // from Omniarchive
+						  String phase, int clientJsonVersion) {
 	public record Downloads(ArtifactMetadata client, ArtifactMetadata client_mappings, ArtifactMetadata server,
 							ArtifactMetadata server_mappings, ArtifactMetadata windows_server, ArtifactMetadata server_zip) {
 	}
 
-	public record JavaVersion(int majorVersion) {
+	public record JavaVersion(String component, int majorVersion,
+							  // from Omniarchive
+							  int minVersion) {
 	}
 
 	public VersionInfo withUpdatedId(String versionId) {
 		if (this.id().equals(versionId)) {
 			return this;
 		}
-		return new VersionInfo(this.assetIndex(), this.assets(), this.downloads(), versionId, this.javaVersion(), this.libraries(), this.mainClass(), this.releaseTime(), this.time(), this.type(), this.arguments(), this.minecraftArguments());
+		return new VersionInfo(this.assetIndex(), this.assets(), this.complianceLevel(), this.downloads(), versionId, this.javaVersion(), this.libraries(), this.logging(), this.mainClass(), this.minimumLauncherVersion(), this.releaseTime(), this.time(), this.type(), this.arguments(), this.minecraftArguments(), this.phase(), this.clientJsonVersion());
 	}
 
 	public record VersionArguments(List<VersionArgumentWithRules> game, List<VersionArgumentWithRules> jvm) {
@@ -43,5 +46,10 @@ public record VersionInfo(ArtifactMetadata assetIndex, String assets, Downloads 
 
 	public record VersionArgumentOS(String name, String version, String arch) {
 	}
-}
 
+	public record Logging(LoggingInfo client) {
+	}
+
+	public record LoggingInfo(String argument, ArtifactMetadata file, String type) {
+	}
+}

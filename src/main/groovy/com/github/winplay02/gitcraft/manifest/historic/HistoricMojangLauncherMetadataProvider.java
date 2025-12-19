@@ -153,6 +153,7 @@ public class HistoricMojangLauncherMetadataProvider extends BaseMetadataProvider
 			return new VersionInfo(
 				MiscHelper.mergeEqualOrNullWithPreference(preferredVersionInfo::assetIndex, metaSources.values(), VersionInfo::assetIndex),
 				MiscHelper.mergeEqualOrNullWithPreference(preferredVersionInfo::assets, metaSources.values(), VersionInfo::assets),
+				MiscHelper.mergeMaxOrNull(metaSources.values(), VersionInfo::complianceLevel),
 				new VersionInfo.Downloads(
 					MiscHelper.mergeEqualOrNullResolveConflict(metaSources.values(), MiscHelper.chain(VersionInfo::downloads, VersionInfo.Downloads::client), HistoricMojangLauncherMetadataProvider::resolveArtifactConflict),
 					MiscHelper.mergeEqualOrNullResolveConflict(metaSources.values(), MiscHelper.chain(VersionInfo::downloads, VersionInfo.Downloads::client_mappings), HistoricMojangLauncherMetadataProvider::resolveArtifactConflict),
@@ -164,12 +165,16 @@ public class HistoricMojangLauncherMetadataProvider extends BaseMetadataProvider
 				versionId,
 				MiscHelper.mergeEqualOrNull(metaSources.values(), VersionInfo::javaVersion),
 				MiscHelper.mergeListDistinctValues(metaSources.values(), VersionInfo::libraries),
+				MiscHelper.mergeEqualOrNull(metaSources.values(), VersionInfo::logging),
 				MiscHelper.mergeEqualOrNull(metaSources.values(), VersionInfo::mainClass),
+				MiscHelper.mergeMaxOrNull(metaSources.values(), VersionInfo::minimumLauncherVersion),
 				(ZonedDateTime) MiscHelper.mergeMaxOrNull(metaSources.values(), VersionInfo::releaseTime),
 				(ZonedDateTime) MiscHelper.mergeMaxOrNull(metaSources.values(), VersionInfo::time),
 				MiscHelper.mergeEqualOrNull(metaSources.values(), VersionInfo::type),
 				MiscHelper.mergeEqualOrNull(metaSources.values(), VersionInfo::arguments),
-				MiscHelper.mergeEqualOrNull(metaSources.values(), VersionInfo::minecraftArguments)
+				MiscHelper.mergeEqualOrNull(metaSources.values(), VersionInfo::minecraftArguments),
+				MiscHelper.mergeEqualOrNull(metaSources.values(), VersionInfo::phase),
+				MiscHelper.mergeMaxOrNull(metaSources.values(), VersionInfo::clientJsonVersion)
 			);
 		} catch (Exception e) {
 			MiscHelper.panicBecause(e, "Couldn't merge version info of version '%s'", versionId);
